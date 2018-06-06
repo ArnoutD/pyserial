@@ -5,9 +5,17 @@
 How To
 ======
 
-Enable :rfc:`2217` in programs using pySerial.
-    Patch the code where the :class:`serial.Serial` is instantiated. Replace
+Enable :rfc:`2217` (and other URL handlers) in programs using pySerial.
+    Patch the code where the :class:`serial.Serial` is instantiated.
+    E.g. replace::
+
+        s = serial.Serial(...)
+
     it with::
+
+        s = serial.serial_for_url(...)
+
+    or for backwards compatibility to old pySerial installations::
 
         try:
             s = serial.serial_for_url(...)
@@ -33,6 +41,10 @@ Test your setup.
     on the screen, then at least RX and TX work (they still could be swapped
     though).
 
+    There is also a ``spy:://`` URL handler. It prints all calls (read/write,
+    control lines) to the serial port to a file or stderr. See :ref:`spy`
+    for details.
+
 
 FAQ
 ===
@@ -56,7 +68,7 @@ Application works when .py file is run, but fails when packaged (py2exe etc.)
       used.
 
     - :func:`serial.serial_for_url` does a dynamic lookup of protocol handlers
-      at runtime.  If this function is used, the desired handlers have to be
+      at runtime. If this function is used, the desired handlers have to be
       included manually (e.g. 'serial.urlhandler.protocol_socket',
       'serial.urlhandler.protocol_rfc2217', etc.). This can be done either with
       the "includes" option in ``setup.py`` or by a dummy import in one of the
@@ -65,11 +77,27 @@ Application works when .py file is run, but fails when packaged (py2exe etc.)
 User supplied URL handlers
     :func:`serial.serial_for_url` can be used to access "virtual" serial ports
     identified by an :ref:`URL <URLs>` scheme. E.g. for the :rfc:`2217`:
-    ``rfc2217:://``.
+    ``rfc2217://``.
 
     Custom :ref:`URL <URLs>` handlers can be added by extending the module
     search path in :data:`serial.protocol_handler_packages`. This is possible
     starting from pySerial V2.6.
+
+``Permission denied`` errors
+    On POSIX based systems, the user usually needs to be in a special group to
+    have access to serial ports.
+
+    On Debian based systems, serial ports are usually in the group ``dialout``,
+    so running ``sudo adduser $USER dialout`` (and logging-out and -in) enables
+    the user to access the port.
+
+Support for Python 2.6 or earlier
+    Support for older Python releases than 2.7 will not return to pySerial 3.x.
+    Python 2.7 is now many years old (released 2010). If you insist on using
+    Python 2.6 or earlier, it is recommend to use pySerial `2.7`_
+    (or any 2.x version).
+
+.. _`2.7`: https://pypi.python.org/pypi/pyserial/2.7
 
 
 Related software
@@ -81,7 +109,7 @@ com0com - http://com0com.sourceforge.net/
 
 License
 =======
-Copyright (c) 2001-2015 Chris Liechti <cliechti@gmx.net>
+Copyright (c) 2001-2017 Chris Liechti <cliechti@gmx.net>
 All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without

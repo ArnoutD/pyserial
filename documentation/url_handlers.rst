@@ -15,6 +15,7 @@ The function :func:`serial_for_url` accepts the following types of URLs:
 - ``loop://[?logging={debug|info|warning|error}]``
 - ``hwgrep://<regexp>[&skip_busy][&n=N]``
 - ``spy://port[?option[=value][&option[=value]]]``
+- ``alt://port?class=<classname>``
 
 .. versionchanged:: 3.0 Options are specified with ``?`` and ``&`` instead of ``/``
 
@@ -105,11 +106,11 @@ Note that options are separated using the character ``&``, this also applies to
 the first, where URLs usually use ``?``. This exception is made as the question
 mark is used in regexp itself.
 
-Depending on the capabilities of the list_ports module on the system, it is
+Depending on the capabilities of the ``list_ports`` module on the system, it is
 possible to search for the description or hardware ID of a device, e.g. USB
 VID:PID or texts.
 
-Unfortunately, on some systems list_ports only lists a subset of the port
+Unfortunately, on some systems ``list_ports`` only lists a subset of the port
 names with no additional information. Currently, on Windows and Linux and
 OSX it should find additional information.
 
@@ -120,6 +121,8 @@ Supported options in the URL are:
   already in use. This may not work as expected on platforms where the file is
   not locked automatically (e.g. Posix).
 
+
+.. _spy:
 
 ``spy://``
 ==========
@@ -194,14 +197,24 @@ Outputs::
     000002.284 RX   00F0  F0 F1 F2 F3 F4 F5 F6 F7  F8 F9 FA FB FC FD FE FF  ................
     000002.284 BRK  send_break 0.25
 
+Another example, on POSIX, open a second terminal window and find out it's
+device (e.g. with the ``ps`` command in the TTY column), assumed to be
+``/dev/pts/2`` here, double quotes are used so that the ampersand in the URL is
+not interpreted by the shell::
+
+    python -m serial.tools.miniterm "spy:///dev/ttyUSB0?file=/dev/pts/2&color" 115200
+
+The spy output will be live in the second terminal window.
+
 .. versionadded:: 3.0
 
 
 ``alt://``
 ==========
-This handler allows to select alternate implementations of the native serial port.
+This handler allows to select alternate implementations of the native serial
+port.
 
-Currently only the Posix platform provides alternative implementations.
+Currently only the POSIX platform provides alternative implementations.
 
 ``PosixPollSerial``
     Poll based read implementation. Not all systems support poll properly.
@@ -209,10 +222,10 @@ Currently only the Posix platform provides alternative implementations.
     disconnecting while it's in use (e.g. USB-serial unplugged).
 
 ``VTIMESerial``
-    Implement timeout using ``VTIME``/``VMIN`` of tty device instead of using
-    ``select``.  This means that inter character timeout and overall timeout
+    Implement timeout using ``VTIME``/``VMIN`` of TTY device instead of using
+    ``select``. This means that inter character timeout and overall timeout
     can not be used at the same time. Overall timeout is disabled when
-    inter-character timeout is used.  The error handling is degraded.
+    inter-character timeout is used. The error handling is degraded.
 
  
 Examples::

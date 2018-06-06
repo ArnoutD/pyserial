@@ -44,9 +44,9 @@ Get a Serial instance and configure/open it later::
     >>> ser.is_open
     False
 
-Also supported with context manager::
+Also supported with :ref:`context manager <context-manager>`::
 
-    serial.Serial() as ser:
+    with serial.Serial() as ser:
         ser.baudrate = 19200
         ser.port = 'COM1'
         ser.open()
@@ -55,7 +55,7 @@ Also supported with context manager::
 
 Readline
 ========
-Be carefully when using :meth:`readline`. Do specify a timeout when opening the
+Be careful when using :meth:`readline`. Do specify a timeout when opening the
 serial port otherwise it could block forever if no newline character is
 received. Also note that :meth:`readlines` only works with a timeout.
 :meth:`readlines` depends on having a timeout and interprets that as EOF (end
@@ -108,5 +108,5 @@ include entries that matched.
 Accessing ports
 ---------------
 pySerial includes a small console based terminal program called
-:ref:`miniterm`.  It ca be started with ``python -m serial.tools.miniterm <port_name>``
+:ref:`miniterm`.  It can be started with ``python -m serial.tools.miniterm <port_name>``
 (use option ``-h`` to get a listing of all options).

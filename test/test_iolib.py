@@ -24,31 +24,14 @@ Shortcut these pin pairs:
 On a 9 pole DSUB these are the pins (2-3) (4-6) (7-8)
 """
 
-import unittest
-import sys
-
-if __name__ == '__main__'  and sys.version_info < (2, 6):
-    sys.stderr.write("""\
-==============================================================================
-WARNING: this test is intended for Python 2.6 and newer where the io library
-is available. This seems to be an older version of Python running.
-Continuing anyway...
-==============================================================================
-""")
-
 import io
+import sys
+import unittest
 import serial
 
-# trick to make that this test run under 2.6 and 3.x without modification.
-# problem is, io library on 2.6 does NOT accept type 'str' and 3.x doesn't
-# like u'nicode' strings with the prefix and it is not providing an unicode
-# function ('str' is now what 'unicode' used to be)
-if sys.version_info >= (3, 0):
-    def unicode(x): return x
-
-
 # on which port should the tests be performed:
-PORT = 0
+PORT = 'loop://'
+
 
 class Test_SerialAndIO(unittest.TestCase):
 
@@ -62,7 +45,7 @@ class Test_SerialAndIO(unittest.TestCase):
 
     def test_hello_raw(self):
         self.io.write(b"hello\n".decode('utf-8'))
-        self.io.flush() # it is buffering. required to get the data out
+        self.io.flush()  # it is buffering. required to get the data out
         hello = self.io.readline()
         self.assertEqual(hello, b"hello\n".decode('utf-8'))
 
@@ -72,7 +55,7 @@ if __name__ == '__main__':
     sys.stdout.write(__doc__)
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
-    sys.stdout.write("Testing port: %r\n" % PORT)
+    sys.stdout.write("Testing port: {!r}\n".format(PORT))
     sys.argv[1:] = ['-v']
     # When this module is executed from the command-line, it runs all its tests
     unittest.main()

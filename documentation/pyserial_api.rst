@@ -12,7 +12,7 @@ Native ports
 
 .. class:: Serial
 
-    .. method:: __init__(port=None, baudrate=9600, bytesize=EIGHTBITS, parity=PARITY_NONE, stopbits=STOPBITS_ONE, timeout=None, xonxoff=False, rtscts=False, write_timeout=None, dsrdtr=False, inter_byte_timeout=None)
+    .. method:: __init__(port=None, baudrate=9600, bytesize=EIGHTBITS, parity=PARITY_NONE, stopbits=STOPBITS_ONE, timeout=None, xonxoff=False, rtscts=False, write_timeout=None, dsrdtr=False, inter_byte_timeout=None, exclusive=None)
 
         :param port:
             Device name or :const:`None`.
@@ -52,6 +52,10 @@ Native ports
 
         :param float inter_byte_timeout:
             Inter-character timeout, :const:`None` to disable (default).
+
+        :param bool exclusive:
+            Set exclusive access mode (POSIX only).  A port cannot be opened in 
+            exclusive access mode if it is already open in exclusive access mode.
 
         :exception ValueError:
             Will be raised when parameter are out of range, e.g. baud rate, data bits.
@@ -108,10 +112,24 @@ Native ports
         .. versionchanged:: 2.5
             *dsrdtr* now defaults to ``False`` (instead of *None*)
         .. versionchanged:: 3.0 numbers as *port* argument are no longer supported
+        .. versionadded:: 3.3 ``exclusive`` flag
 
     .. method:: open()
 
-        Open port.
+        Open port. The state of :attr:`rts` and :attr:`dtr` is applied.
+
+        .. note::
+
+            Some OS and/or drivers may activate RTS and or DTR automatically,
+            as soon as the port is opened. There may be a glitch on RTS/DTR
+            when :attr:`rts` or :attr:`dtr` are set differently from their
+            default value (``True`` / active).
+
+        .. note::
+
+            For compatibility reasons, no error is reported when applying
+            :attr:`rts` or :attr:`dtr` fails on POSIX due to EINVAL (22) or
+            ENOTTY (25).
 
     .. method:: close()
 
@@ -187,7 +205,7 @@ Native ports
 
     .. method:: reset_input_buffer()
 
-        Flush input buffer, discarding all it's contents.
+        Flush input buffer, discarding all its contents.
 
         .. versionchanged:: 3.0 renamed from ``flushInput()``
 
@@ -195,6 +213,9 @@ Native ports
 
         Clear output buffer, aborting the current output and
         discarding all that is in the buffer.
+
+        Note, for some USB serial adapters, this may only flush the buffer of
+        the OS and not all the data that may be present in the USB part.
 
         .. versionchanged:: 3.0 renamed from ``flushOutput()``
 
@@ -222,8 +243,8 @@ Native ports
         :type: bool
 
         Set RTS line to specified logic level. It is possible to assign this
-        value before opening the serial port, then the value is applied uppon
-        :meth:`open`.
+        value before opening the serial port, then the value is applied upon
+        :meth:`open` (with restrictions, see :meth:`open`).
 
     .. attribute:: dtr
 
@@ -232,8 +253,8 @@ Native ports
         :type: bool
 
         Set DTR line to specified logic level. It is possible to assign this
-        value before opening the serial port, then the value is applied uppon
-        :meth:`open`.
+        value before opening the serial port, then the value is applied upon
+        :meth:`open` (with restrictions, see :meth:`open`).
 
     Read-only attributes:
 
@@ -272,6 +293,10 @@ Native ports
 
         Return the state of the CD line
 
+    .. attribute:: is_open
+
+        :getter: Get the state of the serial port, whether it's open.
+        :type: bool
 
     New values can be assigned to the following attributes (properties), the
     port will be reconfigured, even if it's opened at that time:
@@ -440,6 +465,18 @@ Native ports
 
         .. versionadded:: 2.5
 
+    .. method:: readline(size=-1)
+
+        Provided via :meth:`io.IOBase.readline`
+
+    .. method:: readlines(hint=-1)
+
+        Provided via :meth:`io.IOBase.readlines`
+
+    .. method:: writelines(lines)
+
+        Provided via :meth:`io.IOBase.writelines`
+
     The port settings can be read and written as dictionary. The following
     keys are supported: ``write_timeout``, ``inter_byte_timeout``,
     ``dsrdtr``, ``baudrate``, ``timeout``, ``parity``, ``bytesize``,
@@ -454,7 +491,8 @@ Native ports
         current settings so that a later point in time they can be restored
         using :meth:`apply_settings`.
 
-        Note that control lines (RTS/DTR) are part of the settings.
+        Note that the state of control lines (RTS/DTR) are not part of the
+        settings.
 
         .. versionadded:: 2.5
         .. versionchanged:: 3.0 renamed from ``getSettingsDict``
@@ -472,6 +510,41 @@ Native ports
         .. versionadded:: 2.5
         .. versionchanged:: 3.0 renamed from ``applySettingsDict``
 
+
+    .. _context-manager:
+
+    This class can be used as context manager. The serial port is closed when
+    the context is left.
+
+    .. method:: __enter__()
+
+        :returns: Serial instance
+
+        Returns the instance that was used in the ``with`` statement.
+
+        Example:
+
+        >>> with serial.serial_for_url(port) as s:
+        ...     s.write(b'hello')
+
+        The port is opened automatically:
+
+        >>> port = serial.Serial()
+        >>> port.port = '...'
+        >>> with port as s:
+        ...     s.write(b'hello')
+
+        Which also means that ``with`` statements can be used repeatedly,
+        each time opening and closing the port.
+
+        .. versionchanged:: 3.4 the port is automatically opened
+
+
+    .. method:: __exit__(exc_type, exc_val, exc_tb)
+
+        Closes serial port (exceptions are not handled by ``__exit__``).
+
+
     Platform specific methods.
 
     .. warning:: Programs using the following methods and attributes are not
@@ -481,9 +554,10 @@ Native ports
 
         :platform: Posix
 
-        Configure the device for nonblocking operation. This can be useful if
-        the port is used with :mod:`select`. Note that :attr:`timeout` must
-        also be set to ``0``
+        .. deprecated:: 3.2
+           The serial port is already opened in this mode. This method is not
+           needed and going away.
+
 
     .. method:: fileno()
 
@@ -520,7 +594,33 @@ Native ports
         .. versionchanged:: 2.7 (renamed on Posix, function was called ``flowControl``)
         .. versionchanged:: 3.0 renamed from ``setXON``
 
+    .. method:: cancel_read()
 
+        :platform: Posix
+        :platform: Windows
+
+        Cancel a pending read operation from another thread. A blocking
+        :meth:`read` call is aborted immediately. :meth:`read` will not report
+        any error but return all data received up to that point (similar to a
+        timeout).
+
+        On Posix a call to `cancel_read()` may cancel a future :meth:`read` call.
+
+        .. versionadded:: 3.1
+
+    .. method:: cancel_write()
+
+        :platform: Posix
+        :platform: Windows
+
+        Cancel a pending write operation from another thread. The
+        :meth:`write` method will return immediately (no error indicated).
+        However the OS may still be sending from the buffer, a separate call to
+        :meth:`reset_output_buffer` may be needed.
+
+        On Posix a call to `cancel_write()` may cancel a future :meth:`write` call.
+
+        .. versionadded:: 3.1
 
     .. note:: The following members are deprecated and will be removed in a
               future release.
@@ -532,6 +632,10 @@ Native ports
     .. method:: inWaiting()
 
         .. deprecated:: 3.0 see :attr:`in_waiting`
+
+    .. method:: isOpen()
+
+        .. deprecated:: 3.0 see :attr:`is_open`
 
     .. attribute:: writeTimeout
 
@@ -614,8 +718,10 @@ Native ports
 
 
 Implementation detail: some attributes and functions are provided by the
-class :class:`SerialBase` and some by the platform specific class and
-others by the base class mentioned above.
+class :class:`serial.SerialBase` which inherits from :class:`io.RawIOBase`
+and some by the platform specific class and others by the base class
+mentioned above.
+
 
 RS485 support
 -------------
@@ -628,12 +734,14 @@ enable RS485 specific support on some platforms. Currently Windows and Linux
 
 Usage::
 
+    import serial
+    import serial.rs485
     ser = serial.Serial(...)
     ser.rs485_mode = serial.rs485.RS485Settings(...)
     ser.write(b'hello')
 
 There is a subclass :class:`rs485.RS485` available to emulate the RS485 support
-on regular serial ports.
+on regular serial ports (``serial.rs485`` needs to be imported).
 
 
 .. class:: rs485.RS485Settings
@@ -703,7 +811,6 @@ on regular serial ports.
 
     .. note:: The loopback property is ignored by this implementation. The actual
         behavior depends on the used hardware.
-
 
 
 
@@ -971,7 +1078,7 @@ Module functions and attributes
     :returns: a generator that yields bytes
 
     Some versions of Python (3.x) would return integers instead of bytes when
-    looping over an instance of ``bytes``.  This helper function ensures that
+    looping over an instance of ``bytes``. This helper function ensures that
     bytes are returned.
 
     .. versionadded:: 3.0
@@ -1171,48 +1278,13 @@ Example::
 asyncio
 =======
 
-.. module:: serial.aio
+``asyncio`` was introduced with Python 3.4. Experimental support for pySerial
+is provided via a separate distribution `pyserial-asyncio`_.
 
-.. warning:: This implementation is currently in an experimental state. Use
-    at your own risk.
+It is currently under development, see:
 
-Experimental asyncio support is available for Python 3.4 and newer. The module
-:mod:`serial.aio` provides a :class:`asyncio.Transport`:
-``SerialTransport``.
+- http://pyserial-asyncio.readthedocs.io/
+- https://github.com/pyserial/pyserial-asyncio
 
-
-A factory function (`asyncio.coroutine`) is provided:
-
-.. function:: create_serial_connection(loop, protocol_factory, \*args, \*\*kwargs)
-
-    :param loop: The event handler
-    :param protocol_factory: Factory function for a :class:`asyncio.Protocol`
-    :param args: Passed to the :class:`serial.Serial` init function
-    :param kwargs: Passed to the :class:`serial.Serial` init function
-    :platform: Posix
-
-    Get a connection making coroutine.
-
-Example::
-
-    class Output(asyncio.Protocol):
-        def connection_made(self, transport):
-            self.transport = transport
-            print('port opened', transport)
-            transport.serial.rts = False
-            transport.write(b'hello world\n')
-
-        def data_received(self, data):
-            print('data received', repr(data))
-            self.transport.close()
-
-        def connection_lost(self, exc):
-            print('port closed')
-            asyncio.get_event_loop().stop()
-
-    loop = asyncio.get_event_loop()
-    coro = serial.aio.create_serial_connection(loop, Output, '/dev/ttyUSB0', baudrate=115200)
-    loop.run_until_complete(coro)
-    loop.run_forever()
-    loop.close()
+.. _`pyserial-asyncio`: https://pypi.python.org/pypi/pyserial-asyncio
 

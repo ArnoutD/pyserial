@@ -36,7 +36,7 @@ bytes_0to255 = bytes(bytearray(range(256)))
 
 def segments(data, size=16):
     for a in range(0, len(data), size):
-        yield data[a:a+size]
+        yield data[a:a + size]
 
 
 class Test4_Nonblocking(unittest.TestCase):
@@ -66,8 +66,8 @@ class Test4_Nonblocking(unittest.TestCase):
             self.s.write(block)
             # there might be a small delay until the character is ready (especially on win32)
             time.sleep(0.05)
-            self.assertEqual(self.s.in_waiting, length, "expected exactly %d character for inWainting()" % length)
-            self.assertEqual(self.s.read(length), block)#, "expected a %r which was written before" % block)
+            self.assertEqual(self.s.in_waiting, length, "expected exactly {} character for inWainting()".format(length))
+            self.assertEqual(self.s.read(length), block)  #, "expected a %r which was written before" % block)
         self.assertEqual(self.s.read(1), b'', "expected empty buffer after all sent chars are read")
 
     def test2_LoopbackTimeout(self):
@@ -113,6 +113,7 @@ class SendEvent(threading.Thread):
         self.stopped = 1
         self.x.wait()
 
+
 class Test1_Forever(unittest.TestCase):
     """Tests a port with no timeout. These tests require that a
     character is sent after some time to stop the test, this is done
@@ -130,7 +131,7 @@ class Test1_Forever(unittest.TestCase):
         a character is sent after some time to terminate the test (SendEvent)."""
         c = self.s.read(1)
         if not (self.event.isSet() and c == b'E'):
-            self.fail("expected marker (evt=%r, c=%r)" % (self.event.isSet(), c))
+            self.fail("expected marker (evt={!r}, c={!r})".format(self.event.isSet(), c))
 
 
 class Test2_Forever(unittest.TestCase):
@@ -153,8 +154,8 @@ class Test2_Forever(unittest.TestCase):
             self.s.write(block)
             # there might be a small delay until the character is ready (especially on win32 and rfc2217)
             time.sleep(0.05)
-            self.assertEqual(self.s.in_waiting, length)#, "expected exactly %d character for inWainting()" % length)
-            self.assertEqual(self.s.read(length), block) #, "expected %r which was written before" % block)
+            self.assertEqual(self.s.in_waiting, length)  #, "expected exactly %d character for inWainting()" % length)
+            self.assertEqual(self.s.read(length), block)  #, "expected %r which was written before" % block)
         self.assertEqual(self.s.in_waiting, 0, "expected empty buffer after all sent chars are read")
 
 
@@ -196,36 +197,37 @@ class Test_MoreTimeouts(unittest.TestCase):
         self.s = serial.serial_for_url(PORT, do_not_open=True)
 
     def tearDown(self):
+        self.s.reset_output_buffer()
+        self.s.flush()
         #~ self.s.write(serial.XON)
         self.s.close()
         # reopen... some faulty USB-serial adapter make next test fail otherwise...
         self.s.timeout = 1
         self.s.xonxoff = False
         self.s.open()
-        self.s.read(10)
+        self.s.read(3000)
         self.s.close()
 
     def test_WriteTimeout(self):
         """Test write() timeout."""
         # use xonxoff setting and the loop-back adapter to switch traffic on hold
         self.s.port = PORT
-        self.s.writeTimeout = True
+        self.s.write_timeout = 1.0
         self.s.xonxoff = True
         self.s.open()
         self.s.write(serial.XOFF)
-        time.sleep(0.5) # some systems need a little delay so that they can react on XOFF
+        time.sleep(0.5)  # some systems need a little delay so that they can react on XOFF
         t1 = time.time()
-        self.assertRaises(serial.SerialTimeoutException, self.s.write, b"timeout please"*200)
+        self.assertRaises(serial.SerialTimeoutException, self.s.write, b"timeout please" * 200)
         t2 = time.time()
-        self.assertTrue( 0.9 <= (t2-t1) < 2.1, "Timeout not in the given interval (%s)" % (t2-t1))
+        self.assertTrue(0.9 <= (t2 - t1) < 2.1, "Timeout not in the given interval ({})".format(t2 - t1))
 
 
 if __name__ == '__main__':
-    import sys
     sys.stdout.write(__doc__)
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
-    sys.stdout.write("Testing port: %r\n" % PORT)
+    sys.stdout.write("Testing port: {!r}\n".format(PORT))
     sys.argv[1:] = ['-v']
     # When this module is executed from the command-line, it runs all its tests
     unittest.main()

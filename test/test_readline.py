@@ -22,22 +22,20 @@ On a 9 pole DSUB these are the pins (2-3) (4-6) (7-8)
 """
 
 import unittest
-import threading
-import time
 import sys
 import serial
 
 #~ print serial.VERSION
 
 # on which port should the tests be performed:
-PORT = 0
+PORT = 'loop://'
 
 if sys.version_info >= (3, 0):
     def data(string):
         return bytes(string, 'latin1')
 else:
-    def data(string): return string
-
+    def data(string):
+        return string
 
 
 class Test_Readline(unittest.TestCase):
@@ -88,7 +86,7 @@ class Test_Readline(unittest.TestCase):
 
     def test_alternate_eol(self):
         """Test readline with alternative eol settings (skipped for io based systems)"""
-        if hasattr(self.s, 'xreadlines'): # test if it is our FileLike base class
+        if hasattr(self.s, 'xreadlines'):  # test if it is our FileLike base class
             self.s.write(serial.to_bytes("no\rno\nyes\r\n"))
             self.assertEqual(
                     self.s.readline(eol=serial.to_bytes("\r\n")),
@@ -100,7 +98,7 @@ if __name__ == '__main__':
     sys.stdout.write(__doc__)
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
-    sys.stdout.write("Testing port: %r\n" % PORT)
+    sys.stdout.write("Testing port: {!r}\n".format(PORT))
     sys.argv[1:] = ['-v']
     # When this module is executed from the command-line, it runs all its tests
     unittest.main()

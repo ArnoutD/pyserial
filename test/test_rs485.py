@@ -13,7 +13,8 @@ import serial
 import serial.rs485
 
 # on which port should the tests be performed:
-PORT = 0
+PORT = 'loop://'
+
 
 class Test_RS485_settings(unittest.TestCase):
     """Test RS485 related functionality"""
@@ -42,6 +43,8 @@ class Test_RS485_class(unittest.TestCase):
     """Test RS485 class"""
 
     def setUp(self):
+        if not isinstance(serial.serial_for_url(PORT), serial.Serial):
+            raise unittest.SkipTest("RS485 test only compatible with real serial port")
         self.s = serial.rs485.RS485(PORT, timeout=1)
 
     def tearDown(self):
@@ -53,13 +56,12 @@ class Test_RS485_class(unittest.TestCase):
         self.assertEqual(self.s.read(5), b'hello')
 
 
-
 if __name__ == '__main__':
     import sys
     sys.stdout.write(__doc__)
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
-    sys.stdout.write("Testing port: %r\n" % PORT)
+    sys.stdout.write("Testing port: {!r}\n".format(PORT))
     sys.argv[1:] = ['-v']
     # When this module is executed from the command-line, it runs all its tests
     unittest.main()

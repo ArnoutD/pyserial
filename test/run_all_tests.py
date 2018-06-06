@@ -14,11 +14,11 @@ import unittest
 import sys
 import os
 
-# inject local copy to avoid testing the installed version instead of the
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# inject local copy to avoid testing the installed version instead of the one in the repo
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import serial
-print("Patching sys.path to test local version. Testing Version: %s" % (serial.VERSION,))
+import serial  # noqa
+print("Patching sys.path to test local version. Testing Version: {}".format(serial.VERSION))
 
 PORT = 'loop://'
 if len(sys.argv) > 1:
@@ -34,17 +34,17 @@ for modulename in [
     try:
         module = __import__(modulename)
     except ImportError:
-        print("skipping %s" % (modulename,))
+        print("skipping {}".format(modulename))
     else:
         module.PORT = PORT
         testsuite = unittest.findTestCases(module)
-        print("found %s tests in %r" % (testsuite.countTestCases(), modulename))
+        print("found {} tests in {!r}".format(testsuite.countTestCases(), modulename))
         mainsuite.addTest(testsuite)
 
 verbosity = 1
 if '-v' in sys.argv[1:]:
     verbosity = 2
-    print('-'*78)
+    print('-' * 78)
 
 # run the collected tests
 testRunner = unittest.TextTestRunner(verbosity=verbosity)

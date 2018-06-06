@@ -7,6 +7,10 @@
 #
 # SPDX-License-Identifier:    BSD-3-Clause
 
+# pylint: disable=invalid-name,too-few-public-methods,protected-access,too-many-instance-attributes
+
+from __future__ import absolute_import
+
 from ctypes import c_ulong, c_void_p, c_int64, c_char, \
                    WinDLL, sizeof, Structure, Union, POINTER
 from ctypes.wintypes import HANDLE
@@ -177,6 +181,10 @@ WaitForSingleObject = _stdcall_libraries['kernel32'].WaitForSingleObject
 WaitForSingleObject.restype = DWORD
 WaitForSingleObject.argtypes = [HANDLE, DWORD]
 
+CancelIoEx = _stdcall_libraries['kernel32'].CancelIoEx
+CancelIoEx.restype = BOOL
+CancelIoEx.argtypes = [HANDLE, LPOVERLAPPED]
+
 ONESTOPBIT = 0  # Variable c_int
 TWOSTOPBITS = 2  # Variable c_int
 ONE5STOPBITS = 1
@@ -212,8 +220,14 @@ FILE_FLAG_OVERLAPPED = 1073741824  # Variable c_int
 EV_DSR = 16  # Variable c_int
 MAXDWORD = 4294967295  # Variable c_uint
 EV_RLSD = 32  # Variable c_int
+
 ERROR_SUCCESS = 0
+ERROR_NOT_ENOUGH_MEMORY = 8
+ERROR_OPERATION_ABORTED = 995
+ERROR_IO_INCOMPLETE = 996
 ERROR_IO_PENDING = 997  # Variable c_long
+ERROR_INVALID_USER_BUFFER = 1784
+
 MS_CTS_ON = 16  # Variable c_ulong
 EV_EVENT1 = 2048  # Variable c_int
 EV_RX80FULL = 1024  # Variable c_int
